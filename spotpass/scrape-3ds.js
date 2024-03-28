@@ -27,7 +27,7 @@ async function scrape3DS(downloadBase) {
 	}
 }
 
-async function scrapeTask(downloadBase, task, titleID) {
+async function scrapeTask(downloadBase, task) {
 	const response = await axios.get(`${NPFL_URL_BASE}/${task.app_id}/${task.task}?c=${task.country}&l=${task.language}`, {
 		validateStatus: () => {
 			return true;
@@ -62,7 +62,7 @@ async function scrapeTask(downloadBase, task, titleID) {
 		const headersPath = `${downloadBase}/${task.country}/${task.language}/${task.app_id}/${task.task}/${fileName}.boss_headers.txt`;
 		const tasksheetDownloadPath = `${downloadBase}/${task.country}/${task.language}/${task.app_id}/${task.task}/tasksheet.xml`;
 
-		var titleID = await downloadTasksheet(`${TASK_SHEET_URL_BASE}/${task.app_id}/${task.task}?c=${task.country}&l=${task.language}`, tasksheetDownloadPath, titleID);
+		var titleID = await downloadTasksheet(`${TASK_SHEET_URL_BASE}/${task.app_id}/${task.task}?c=${task.country}&l=${task.language}`, tasksheetDownloadPath);
 
 		let success = await downloadContentFile(`${NPDL_URL_BASE}/${task.app_id}/${task.task}/${task.country}/${task.language}/${fileName}`, downloadPath, headersPath);
 
@@ -128,7 +128,7 @@ async function downloadTasksheet(url, tasksheetDownloadPath) {
 	});
 
 	if (response.status !== 200) {
-		titleID = "unknown"
+		titleID = "response_error"
 		return titleID;
 	}
 
