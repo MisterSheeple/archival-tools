@@ -6,7 +6,6 @@ const { create: xmlParser } = require('xmlbuilder2');
 
 const NPFL_URL_BASE = 'https://npfl.c.app.nintendowifi.net/p01/filelist';
 const NPDL_URL_BASE = 'https://npdl.cdn.nintendowifi.net/p01/nsa';
-const TASK_SHEET_URL_BASE = 'https://npts.app.nintendo.net/p01/tasksheet/1';
 
 const httpsAgent = new https.Agent({
 	rejectUnauthorized: false,
@@ -60,42 +59,39 @@ async function scrapeTask(downloadBase, task) {
 		// * This is pretty slow, but it at least should get all the data.
 		const downloadPath = `${downloadBase}/${task.country}/${task.language}/${task.app_id}/${task.task}/${fileName}.boss`;
 		const headersPath = `${downloadBase}/${task.country}/${task.language}/${task.app_id}/${task.task}/${fileName}.boss_headers.txt`;
-		const tasksheetDownloadPath = `${downloadBase}/${task.country}/${task.language}/${task.app_id}/${task.task}/tasksheet.xml`;
-
-		var titleID = await downloadTasksheet(`${TASK_SHEET_URL_BASE}/${task.app_id}/${task.task}?c=${task.country}&l=${task.language}`, tasksheetDownloadPath);
 
 		let success = await downloadContentFile(`${NPDL_URL_BASE}/${task.app_id}/${task.task}/${task.country}/${task.language}/${fileName}`, downloadPath, headersPath);
 
 		if (success) {
-			fs.appendFile('scrape_data_3ds.csv', (`${titleID},${task.app_id},${task.task},${fileName},${task.country},${task.language}\n`));
+			fs.appendFile('scrape_data_3ds.csv', (`${task.app_id},${task.task},${fileName},${task.country},${task.language}\n`));
 			return;
 		}
 
 		success = await downloadContentFile(`${NPDL_URL_BASE}/${task.app_id}/${task.task}/${task.language}_${task.country}/${fileName}`, downloadPath, headersPath);
 
 		if (success) {
-			fs.appendFile('scrape_data_3ds.csv', (`${titleID},${task.app_id},${task.task},${fileName},${task.country},${task.language}\n`));
+			fs.appendFile('scrape_data_3ds.csv', (`${task.app_id},${task.task},${fileName},${task.country},${task.language}\n`));
 			return
 		}
 
 		success = await downloadContentFile(`${NPDL_URL_BASE}/${task.app_id}/${task.task}/${task.country}/${fileName}`, downloadPath, headersPath);
 
 		if (success) {
-			fs.appendFile('scrape_data_3ds.csv', (`${titleID},${task.app_id},${task.task},${fileName},${task.country},${task.language}\n`));
+			fs.appendFile('scrape_data_3ds.csv', (`${task.app_id},${task.task},${fileName},${task.country},${task.language}\n`));
 			return
 		}
 
 		success = await downloadContentFile(`${NPDL_URL_BASE}/${task.app_id}/${task.task}/${task.language}/${fileName}`, downloadPath, headersPath);
 
 		if (success) {
-			fs.appendFile('scrape_data_3ds.csv', (`${titleID},${task.app_id},${task.task},${fileName},${task.country},${task.language}\n`));
+			fs.appendFile('scrape_data_3ds.csv', (`${task.app_id},${task.task},${fileName},${task.country},${task.language}\n`));
 			return
 		}
 
 		success = await downloadContentFile(`${NPDL_URL_BASE}/${task.app_id}/${task.task}/${fileName}`, downloadPath, headersPath);
 
 		if (success) {
-			fs.appendFile('scrape_data_3ds.csv', (`${titleID},${task.app_id},${task.task},${fileName},${task.country},${task.language}\n`));
+			fs.appendFile('scrape_data_3ds.csv', (`${task.app_id},${task.task},${fileName},${task.country},${task.language}\n`));
 		}
 	}
 }
@@ -120,35 +116,6 @@ async function downloadContentFile(url, downloadPath, headersPath) {
 	fs.writeFileSync(headersPath, headersString);
 
 	return true;
-}
-
-async function downloadTasksheet(url, tasksheetDownloadPath) {
-	const response = await axios.get(url, {
-		httpsAgent
-	});
-
-	if (response.status !== 200) {
-		titleID = "response_error"
-		return titleID;
-	}
-
-	const tasksheetData = Buffer.from(response.data, 'binary');
-	fs.writeFileSync(tasksheetDownloadPath, tasksheetData);
-
-	if (response.headers['content-type'] || response.headers['content-type'].startsWith('application/xml')) {
-		const xml = xmlParser(response.data).toObject();
-		titleID = await getTitleID(xml);
-		return titleID;
-	}
-}
-
-async function getTitleID(xml) {
-	if (!xml || !xml.TaskSheet || !xml.TaskSheet.TitleId) {
-		titleID = "unknown";
-		return titleID;
-	}
-	titleID = xml.TaskSheet.TitleId.toUpperCase();
-	return titleID;
 }
 
 module.exports = scrape3DS;
